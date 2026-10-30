@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Permainan Pengelasan Haiwan - Sains Tahun 3</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Fredoka One untuk fon mesra kanak-kanak -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Canvas Confetti untuk sambutan jawapan betul -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background-color: #e8f5e9;
+            background-image: radial-gradient(#c8e6c9 1px, transparent 1px), radial-gradient(#c8e6c9 1px, #e8f5e9 1px);
+            background-size: 30px 30px;
+            background-position: 0 0, 15px 15px;
+        }
+
+        .jungle-gradient {
+            background: linear-gradient(135deg, #115e59 0%, #065f46 100%);
+        }
+
+        .bounce-slow {
+            animation: bounce 3s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
+        .pulse-soft {
+            animation: pulse-soft-key 2s infinite;
+        }
+
+        @keyframes pulse-soft-key {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+
+        .shaking {
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+
+        .success-flash {
+            animation: flashGreen 0.4s ease-out;
+        }
+
+        @keyframes flashGreen {
+            0%, 100% { background-color: transparent; }
+            50% { background-color: rgba(74, 222, 128, 0.3); }
+        }
+
+        /* Zon heretan (Drop Zones) */
+        .drop-zone {
+            transition: all 0.2s ease;
+        }
+        .drop-zone.dragover {
+            transform: scale(1.03);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #81c784;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between overflow-x-hidden text-slate-800">
+
+    <header class="w-full jungle-gradient text-white py-2 px-4 shadow-sm flex justify-between items-center z-10 shrink-0">
+        <div class="flex items-center space-x-2">
+            <span class="text-2xl">🌴</span>
+            <div>
+                <h1 class="text-sm md:text-base font-bold tracking-wide leading-none">Rimba Klasifikasi Haiwan</h1>
+                <p class="text-[10px] text-emerald-200">Sains Tahun 3 SK - Tabiat Pemakanan Haiwan</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-3">
+            <!-- Kawalan Audio -->
+            <button id="btn-audio" onclick="toggleMute()" class="bg-emerald-700 hover:bg-emerald-600 p-1 rounded-full w-8 h-8 flex items-center justify-center transition shadow-inner" title="Buka/Tutup Bunyi">
+                <i id="audio-icon" class="fa-solid fa-volume-high text-xs"></i>
+            </button>
+            <!-- Restart -->
+            <button onclick="resetMulaPermainan()" class="bg-amber-500 hover:bg-amber-400 text-white font-bold px-3 py-1 rounded-lg transition shadow text-xs flex items-center gap-1">
+                <i class="fa-solid fa-rotate-right text-[10px]"></i> Semula
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-grow flex items-center justify-center p-2 md:p-4 w-full max-w-6xl mx-auto overflow-y-auto">
+        
+        <!-- ================= SKRIN 1: MULA PERMAINAN ================= -->
+        <div id="screen-welcome" class="w-full max-w-md bg-white rounded-2xl shadow-xl p-5 border-4 border-emerald-500 text-center relative overflow-hidden transition-all duration-500 transform scale-100 my-auto">
+            <span class="absolute -top-4 -left-4 text-4xl opacity-25">🌿</span>
+            <span class="absolute -bottom-4 -right-4 text-4xl opacity-25">🍃</span>
+
+            <div class="bg-emerald-50 inline-block p-3 rounded-full mb-3">
+                <span class="text-5xl">👩‍🏫🥬🥩</span>
+            </div>
+
+            <h2 class="text-xl md:text-2xl font-black text-emerald-800 mb-1">Selamat Datang, Saintis Muda!</h2>
+            <p class="text-slate-600 mb-4 text-xs">Mari belajar cara mengelaskan haiwan berdasarkan tabiat makanannya bersama Cikgu Yong.</p>
+
+            <div class="bg-amber-50 border-2 border-amber-200 rounded-xl p-4 mb-4 text-left">
+                <label class="block text-amber-900 font-bold mb-1.5 text-xs"><i class="fa-solid fa-user-pen mr-1"></i> Tulis Nama Kamu:</label>
+                <input type="text" id="player-name" placeholder="Contoh: Muhammad / Sarah" class="w-full px-3 py-2 border-2 border-amber-300 rounded-lg text-sm focus:outline-none focus:border-emerald-500 mb-1 font-semibold text-slate-700">
+                <p class="text-[10px] text-amber-700 italic"><i class="fa-solid fa-circle-info mr-1"></i> Sijil penghargaan akan diberikan mengikut nama ini!</p>
+            </div>
+
+            <button onclick="mulaBelajar()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-base font-bold py-3 px-5 rounded-xl shadow-md transition duration-300 transform hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-play"></i> Mulakan Pengembaraan
+            </button>
+        </div>
+
+        <!-- ================= SKRIN 2: UTAMA PERMAINAN (Ketinggian Padat) ================= -->
+        <div id="screen-game" class="hidden w-full flex flex-col md:flex-row gap-3 relative max-h-full">
+            
+            <!-- Bahagian Kiri: Guru & Status (Sangat Pendek) -->
+            <div class="w-full md:w-1/3 flex flex-col gap-2 shrink-0">
+                <!-- Kad Info Murid & Skor -->
+                <div class="bg-white rounded-xl shadow p-2.5 border-t-4 border-emerald-600 flex items-center justify-between">
+                    <div>
+                        <p class="text-[10px] text-slate-400">Pemain:</p>
+                        <p id="display-name" class="font-bold text-xs text-slate-700 truncate max-w-[100px]">-</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[10px] text-slate-400">Markah:</p>
+                        <div class="flex items-center text-amber-500 text-xs font-bold gap-0.5" id="star-score">
+                            ⭐ <span id="score-val" class="text-amber-600">0</span> / <span id="total-val">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Watak Cikgu Dinamik & Dialog (Lebih Pendek) -->
+                <div class="bg-white rounded-xl shadow p-3 border-b-4 border-emerald-600 flex flex-col items-center relative overflow-hidden justify-center min-h-[140px] md:min-h-[180px]">
+                    <div id="teacher-avatar" class="text-5xl bounce-slow mb-1.5 filter drop-shadow">👩‍🏫</div>
+                    <div id="teacher-label" class="bg-emerald-600 text-white font-bold px-2 py-0.5 rounded-full text-[10px] mb-1.5 shadow">Cikgu Yong</div>
+
+                    <!-- Gelembung Dialog Guru -->
+                    <div class="relative w-full bg-emerald-50 border border-emerald-200 text-emerald-950 p-2 rounded-lg text-center text-xs leading-tight shadow-inner">
+                        <div class="absolute -top-1.5 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-l-transparent border-r-4 border-r-transparent border-b-4 border-b-emerald-200"></div>
+                        <p id="teacher-bubble">Hai sayang! Jom kita mulakan pengelasan haiwan.</p>
+                    </div>
+
+                    <!-- Kotak Galakan -->
+                    <div id="cheer-container" class="mt-2 hidden animate-bounce bg-amber-400 text-amber-950 px-3 py-1 rounded-md font-bold text-center text-[10px] shadow">
+                        ⭐ Betul!
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bahagian Kanan: Papan Klasifikasi & Pilihan Kad -->
+            <div class="w-full md:w-2/3 flex flex-col gap-2">
+                
+                <!-- PROGRESS BAR -->
+                <div class="bg-white rounded-xl shadow p-2 flex items-center justify-between gap-2 text-[10px]">
+                    <span class="font-bold text-slate-500 whitespace-nowrap">Kemajuan Rimba:</span>
+                    <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden relative border shadow-inner">
+                        <div id="progress-bar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full w-0 transition-all duration-500"></div>
+                    </div>
+                    <span id="progress-text" class="font-bold text-emerald-700 whitespace-nowrap">0 / 0</span>
+                </div>
+
+                <!-- 3 Bakul Pengelasan (Lebih Pendek) -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2" id="drop-zones-container">
+                    <!-- Kategori 1: Herbivor -->
+                    <div id="zone-plants" data-diet="plants" class="drop-zone bg-gradient-to-b from-green-50 to-emerald-100 border-2 border-dashed border-emerald-400 rounded-xl p-2 text-center min-h-[90px] md:min-h-[110px] flex flex-col justify-between shadow-sm hover:shadow relative overflow-hidden">
+                        <div>
+                            <div class="bg-emerald-500 text-white py-0.5 px-2 rounded-full text-[9px] font-black inline-block uppercase mb-0.5 shadow-sm">HERBIVOR</div>
+                            <h3 class="text-xs font-bold text-emerald-950 flex items-center justify-center gap-0.5">🥦 Tumbuhan</h3>
+                        </div>
+                        <div class="my-1.5 flex flex-wrap justify-center gap-1 max-h-[50px] overflow-y-auto" id="list-plants">
+                            <span class="text-[9px] text-emerald-400/70 italic py-1">Letak ke sini</span>
+                        </div>
+                    </div>
+
+                    <!-- Kategori 2: Karnivor -->
+                    <div id="zone-meat" data-diet="meat" class="drop-zone bg-gradient-to-b from-red-50 to-orange-100 border-2 border-dashed border-orange-400 rounded-xl p-2 text-center min-h-[90px] md:min-h-[110px] flex flex-col justify-between shadow-sm hover:shadow relative overflow-hidden">
+                        <div>
+                            <div class="bg-orange-500 text-white py-0.5 px-2 rounded-full text-[9px] font-black inline-block uppercase mb-0.5 shadow-sm">KARNIVOR</div>
+                            <h3 class="text-xs font-bold text-orange-950 flex items-center justify-center gap-0.5">🥩 Haiwan Lain</h3>
+                        </div>
+                        <div class="my-1.5 flex flex-wrap justify-center gap-1 max-h-[50px] overflow-y-auto" id="list-meat">
+                            <span class="text-[9px] text-orange-400/70 italic py-1">Letak ke sini</span>
+                        </div>
+                    </div>
+
+                    <!-- Kategori 3: Omnivor -->
+                    <div id="zone-both" data-diet="both" class="drop-zone bg-gradient-to-b from-blue-50 to-indigo-100 border-2 border-dashed border-indigo-400 rounded-xl p-2 text-center min-h-[90px] md:min-h-[110px] flex flex-col justify-between shadow-sm hover:shadow relative overflow-hidden">
+                        <div>
+                            <div class="bg-indigo-500 text-white py-0.5 px-2 rounded-full text-[9px] font-black inline-block uppercase mb-0.5 shadow-sm">OMNIVOR</div>
+                            <h3 class="text-xs font-bold text-indigo-950 flex items-center justify-center gap-0.5">🍇 Kedua-duanya</h3>
+                        </div>
+                        <div class="my-1.5 flex flex-wrap justify-center gap-1 max-h-[50px] overflow-y-auto" id="list-both">
+                            <span class="text-[9px] text-indigo-400/70 italic py-1">Letak ke sini</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kad Haiwan Aktif & Butang Aksi (Sangat Padat) -->
+                <div class="bg-white rounded-xl shadow p-3 border-2 border-amber-400 text-center relative flex flex-col items-center justify-between gap-2">
+                    
+                    <div class="w-full flex justify-between items-center text-[10px]">
+                        <button onclick="bukaPetunjuk()" class="bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold px-2.5 py-0.5 rounded-full flex items-center gap-0.5 shadow-sm transition">
+                            💡 Petunjuk Cikgu
+                        </button>
+                        
+                        <!-- PINTAR GEMINI API BUTTON -->
+                        <button onclick="tanyaCikguYongAI()" class="bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow transition">
+                            ✨ Tanya Cikgu Yong!
+                        </button>
+                    </div>
+
+                    <!-- AI Fact Display Area -->
+                    <div id="ai-fact-container" class="hidden w-full bg-teal-50 border border-teal-200 text-teal-900 rounded-lg p-2 text-left text-[11px] leading-relaxed relative">
+                        <button onclick="document.getElementById('ai-fact-container').classList.add('hidden')" class="absolute top-1 right-1 text-teal-700 hover:text-teal-900">
+                            <i class="fa-solid fa-circle-xmark"></i>
+                        </button>
+                        <p class="font-bold text-teal-850 mb-0.5 flex items-center gap-1">
+                            <span class="text-xs">👩‍🏫✨</span> Fakta Pintar Cikgu Yong:
+                        </p>
+                        <p id="ai-fact-text" class="italic">Memuatkan ilmu dari Cikgu Yong...</p>
+                    </div>
+
+                    <div class="w-full flex flex-col items-center">
+                        <div id="hint-bubble" class="hidden mb-1.5 bg-yellow-50 text-yellow-900 border border-yellow-200 text-[10px] py-1 px-3 rounded-lg text-center max-w-xs shadow-sm">
+                            HINT: "Suka rumput hijau..."
+                        </div>
+
+                        <!-- KAD HAIWAN UTAMA -->
+                        <div id="active-animal-card" draggable="true" class="pulse-soft w-28 h-28 bg-amber-50 rounded-xl border-2 border-amber-300 shadow-sm cursor-grab active:cursor-grabbing flex flex-col items-center justify-center p-2 transition-all duration-200 transform">
+                            <span id="animal-emoji" class="text-4xl filter drop-shadow">🐘</span>
+                            <span id="animal-name" class="mt-1 text-sm font-black text-slate-800 leading-none">Gajah</span>
+                            <div class="text-[8px] text-amber-500 uppercase font-black tracking-widest mt-0.5"><i class="fa-solid fa-arrows-up-down-left-right animate-bounce"></i> Heret</div>
+                        </div>
+                    </div>
+
+                    <!-- BUTANG PILIHAN ALTERNATIF -->
+                    <div class="w-full">
+                        <p class="text-slate-400 text-[8px] font-bold mb-1">Atau picit terus pilihan anda:</p>
+                        <div class="grid grid-cols-3 gap-1.5">
+                            <button onclick="pilihKategoriButang('plants')" class="bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-1.5 px-2 rounded-lg shadow-sm transition text-xs">
+                                🥦 Herbivor
+                            </button>
+                            <button onclick="pilihKategoriButang('meat')" class="bg-orange-500 hover:bg-orange-400 text-white font-bold py-1.5 px-2 rounded-lg shadow-sm transition text-xs">
+                                🥩 Karnivor
+                            </button>
+                            <button onclick="pilihKategoriButang('both')" class="bg-indigo-500 hover:bg-indigo-400 text-white font-bold py-1.5 px-2 rounded-lg shadow-sm transition text-xs">
+                                🍇 Omnivor
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= SKRIN 3: SIJIL & TAMAT ================= -->
+        <div id="screen-certificate" class="hidden w-full max-w-md bg-white rounded-2xl shadow-xl p-5 border-4 border-emerald-600 text-center relative overflow-hidden my-auto">
+            <div class="text-4xl mb-1">🏆</div>
+            <h2 class="text-xl font-extrabold text-emerald-800">Syabas! Pengembaraan Selesai!</h2>
+            <p class="text-slate-500 text-xs mt-1">Anda telah menguasai Rimba Klasifikasi Haiwan.</p>
+
+            <!-- BINGKAI SIJIL KECEMERLANGAN (Kecil) -->
+            <div class="my-3.5 p-4 border-2 double-border border-amber-400 bg-amber-50 rounded-xl relative text-center shadow-inner">
+                <span class="absolute top-1 left-1 text-sm">🌱</span>
+                <span class="absolute top-1 right-1 text-sm">🌟</span>
+
+                <h3 class="text-xs font-bold uppercase tracking-widest text-amber-800">Sijil Penghargaan</h3>
+                <p class="text-[8px] text-amber-750 uppercase font-semibold">Sekolah Kebangsaan Rimba Raya</p>
+                
+                <hr class="border-amber-300 my-1.5 w-1/3 mx-auto">
+
+                <p class="text-[9px] italic text-slate-500">Dianugerahkan kepada:</p>
+                <p id="cert-name" class="text-base font-black text-emerald-800 my-1 underline decoration-amber-400 underline-offset-2 capitalize">Nama Murid</p>
+                
+                <p class="text-[9px] text-slate-700 max-w-xs mx-auto leading-normal">
+                    Kerana berjaya mengelaskan semua haiwan sains Tahun 3 dengan cemerlang: <strong class="text-emerald-700">Herbivor, Karnivor & Omnivor</strong>.
+                </p>
+
+                <div class="mt-2.5 grid grid-cols-2 gap-2 text-center">
+                    <div>
+                        <p class="text-[7px] text-slate-400 uppercase">Peratus Skor</p>
+                        <p id="cert-score" class="text-xs font-bold text-amber-700">100%</p>
+                    </div>
+                    <div>
+                        <p class="text-[7px] text-slate-400 uppercase">Tarikh</p>
+                        <p id="cert-date" class="text-xs font-bold text-slate-700">07/07/2026</p>
+                    </div>
+                </div>
+
+                <!-- Tanda Tangan Guru -->
+                <div class="mt-3 flex flex-col items-center justify-center">
+                    <div class="w-24 border-b border-dashed border-slate-400 h-6 relative flex items-center justify-center">
+                        <span id="cert-signature" class="text-[10px] font-semibold italic text-emerald-700 font-serif">Cikgu Yong</span>
+                    </div>
+                    <p class="text-[7px] text-slate-400 mt-0.5">Guru Sains Tahun 3</p>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-2 justify-center text-xs">
+                <button onclick="kongsiSijil()" class="bg-amber-500 hover:bg-amber-400 text-white font-extrabold px-4 py-2 rounded-xl shadow transition transform active:scale-95 flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-copy"></i> Salin Nama Sijil
+                </button>
+                <button onclick="resetMulaPermainan()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold px-4 py-2 rounded-xl shadow transition transform active:scale-95 flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-rotate-right"></i> Main Semula
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full py-1.5 bg-emerald-900 text-emerald-100 text-center text-[10px] border-t border-emerald-800 z-10 shrink-0">
+        <p>Hak Cipta Terpelihara &copy; 2026 | Aplikasi Pembelajaran Sains Tahun 3 SK</p>
+    </footer>
+
+    <script>
+        /* ================= KESAN AUDIO SINTESIS (WEB AUDIO API) ================= */
+        let isMuted = false;
+        let audioCtx = null;
+
+        // Inisialisasi Audio Context secara selamat (Failsafe)
+        function initAudio() {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            } catch (error) {
+                console.warn("Web Audio tidak disokong:", error);
+            }
+        }
+
+        // Fungsi nada synth standard
+        function playTone(freq, type, duration) {
+            if (isMuted || !audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.type = type || 'sine';
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function playClickSound() {
+            playTone(400, 'sine', 0.1);
+        }
+
+        function playCorrectSound() {
+            if (isMuted || !audioCtx) return;
+            try {
+                playTone(523.25, 'sine', 0.15); // C5
+                setTimeout(() => playTone(659.25, 'sine', 0.2), 150); // E5
+            } catch (e) {}
+        }
+
+        function playWrongSound() {
+            if (isMuted || !audioCtx) return;
+            try {
+                playTone(220, 'triangle', 0.3); // A3 (Suara buzzer lembut)
+            } catch (e) {}
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            const icon = document.getElementById('audio-icon');
+            if (isMuted) {
+                icon.className = 'fa-solid fa-volume-xmark';
+                icon.parentElement.classList.replace('bg-emerald-700', 'bg-rose-700');
+            } else {
+                icon.className = 'fa-solid fa-volume-high';
+                icon.parentElement.classList.replace('bg-rose-700', 'bg-emerald-700');
+                initAudio();
+                playClickSound();
+            }
+        }
+
+        /* ================= DATA HAIWAN SAINS TAHUN 3 ================= */
+        const databaseHaiwan = [
+            { id: 'lembu', name: 'Lembu', diet: 'plants', emoji: '🐄', hint: 'Saya suka berjalan di padang rumput sambil meragut daun-daun hijau!', kkn: 'Herbivor' },
+            { id: 'arnab', name: 'Arnab', diet: 'plants', emoji: '🐇', hint: 'Saya suka melompat ke sana sini mencari sayuran manis dan lobak merah.', kkn: 'Herbivor' },
+            { id: 'gajah', name: 'Gajah', diet: 'plants', emoji: '🐘', hint: 'Tubuh saya besar! Makanan kegemaran saya ialah tebu dan batang pokok pisang.', kkn: 'Herbivor' },
+            { id: 'belalang', name: 'Belalang', diet: 'plants', emoji: '🦗', hint: 'Saya adalah serangga pelompat kecil yang suka mengunyah dedaun pokok.', kkn: 'Herbivor' },
+            
+            { id: 'harimau', name: 'Harimau', diet: 'meat', emoji: '🐅', hint: 'Saya ada gigi taring yang sangat tajam untuk memburu daging mangsa.', kkn: 'Karnivor' },
+            { id: 'helang', name: 'Helang', diet: 'meat', emoji: '🦅', hint: 'Saya terbang tinggi mencari mangsa berdarah seperti tikus atau ular.', kkn: 'Karnivor' },
+            { id: 'buaya', name: 'Buaya', diet: 'meat', emoji: '🐊', hint: 'Saya pemangsa reptilia di dalam air yang membaham daging ikan dan ayam.', kkn: 'Karnivor' },
+            { id: 'singa', name: 'Singa', diet: 'meat', emoji: '🦁', hint: 'Saya digelar Raja Rimba! Saya hanya memburu haiwan lain di padang rumput.', kkn: 'Karnivor' },
+            
+            { id: 'ayam', name: 'Ayam', diet: 'both', emoji: '🐓', hint: 'Saya seronok makan bijirin jagung, tetapi saya juga mematuk cacing tanah yang geli!', kkn: 'Omnivor' },
+            { id: 'monyet', name: 'Monyet', diet: 'both', emoji: '🐒', hint: 'Saya suka makan pisang manis, tetapi saya juga menangkap serangga kecil di dahan.', kkn: 'Omnivor' },
+            { id: 'itik', name: 'Itik', diet: 'both', emoji: '🦆', hint: 'Saya makan tumbuhan air lembut dan juga anak ikan kecil yang berenang.', kkn: 'Omnivor' },
+            { id: 'beruang', name: 'Beruang', diet: 'both', emoji: '🐻', hint: 'Saya memetik buah beri segar, tetapi saya juga handal menangkap ikan salmon di sungai.', kkn: 'Omnivor' }
+        ];
+
+        /* ================= STATE PERMAINAN ================= */
+        let senaraiMainHaiwan = [];
+        let indexSemasa = 0;
+        let markahBetul = 0;
+        let namaPemain = "Murid Hebat";
+        
+        // Cikgu Yong Pembimbing Tunggal
+        const cikguYong = {
+            nama: "Cikgu Yong",
+            emoji: "👩‍🏫",
+            intro: "Hai sayang! Saya Cikgu Yong. Jom kita belajar sains rimba dengan gembira hari ini!",
+            soalan: "Tolong Cikgu! Di manakah kategori yang betul untuk haiwan **[ANIMAL]** ini?",
+            betul: [
+                "Wah, betul sekali! Hebatlah kamu, [NAME]!",
+                "Tepat sekali! Murid Cikgu yang ini memang bijak!",
+                "Luar biasa! [ANIMAL] sememangnya makan jenis makanan ini."
+            ],
+            salah: [
+                "Ooo, kurang tepat sedikit sayang. Mari cuba lagi ya!",
+                "Bukan begitu, sayang. Cuba fikirkan semula makanan bagi [ANIMAL].",
+                "Tidak mengapa! Kita belajar daripada kesilapan. Cuba sekali lagi!"
+            ],
+            tamat: "Syabas sayang! Kamu sudah berjaya mengelaskan kesemua haiwan dengan cemerlang!"
+        };
+
+        const galakanBetul = ["SYABAS!", "HEBAT!", "PINTAR!", "TERBAIK!", "BIJAK!"];
+
+        /* ================= INTEGASI GEMINI API ================= */
+        async function panggilCikguYongAI(promptText, systemInstructionText) {
+            const apiKey = ""; // Disediakan secara automatik di runtime
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: promptText }] }],
+                systemInstruction: { parts: [{ text: systemInstructionText }] }
+            };
+
+            let delay = 1000;
+            // Melaksanakan Exponential Backoff sehingga 5 kali cubaan
+            for (let i = 0; i < 5; i++) {
+                try {
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (response.ok) {
+                        const resJson = await response.json();
+                        return resJson.candidates?.[0]?.content?.parts?.[0]?.text || "Cikgu Yong tidak dapat memberikan maklum balas masa kini.";
+                    }
+                } catch (e) {
+                    // Tiada log retries ke console
+                }
+                await new Promise(resolve => setTimeout(resolve, delay));
+                delay *= 2;
+            }
+            throw new Error("Gagal memanggil Cikgu Yong AI.");
+        }
+
+        async function tanyaCikguYongAI() {
+            playClickSound();
+            const factContainer = document.getElementById('ai-fact-container');
+            const factText = document.getElementById('ai-fact-text');
+            const haiwan = senaraiMainHaiwan[indexSemasa];
+
+            if (!haiwan) return;
+
+            // Tunjukkan status memuatkan dengan animasi comel
+            factContainer.classList.remove('hidden');
+            factText.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Cikgu Yong sedang berfikir secara saintifik untuk kamu...`;
+
+            const systemPrompt = "Anda adalah Cikgu Yong, guru Sains Sekolah Rendah (SK) Tahun 3 yang sangat mesra, ceria, dan penyayang. Anda mengajar topik Tabiat Pemakanan Haiwan. Tugas anda adalah untuk memberikan explanation yang sangat pendek (maksimum 2 fasa ayat mudah) tentang mengapa haiwan tersebut tergolong dalam kelas pemakanannya. Gunakan gelaran mesra seperti 'Sayang' atau 'Anak murid cikgu'.";
+            const userPrompt = `Terangkan kenapa haiwan "${haiwan.name}" (${haiwan.emoji}) ialah haiwan jenis "${haiwan.kkn}". Berikan fakta ringkas makanan yang ia makan.`;
+
+            try {
+                const hasilPenjelasan = await panggilCikguYongAI(userPrompt, systemPrompt);
+                factText.innerHTML = hasilPenjelasan;
+            } catch (error) {
+                factText.innerHTML = "Maaf sayang, sambungan ke rimba sains AI Cikgu Yong terputus seketika. Sila cuba lagi ya!";
+            }
+        }
+
+        /* ================= PERSURATAN & LOGIK JALANKAN ================= */
+        window.onload = function() {
+            const inputNameElem = document.getElementById('player-name');
+            if (inputNameElem) {
+                inputNameElem.addEventListener('keyup', function(e) {
+                    if (e.key === 'Enter') {
+                        mulaBelajar();
+                    }
+                });
+            }
+            setUpDragAndDrop();
+        };
+
+        function mulaBelajar() {
+            initAudio();
+            playClickSound();
+
+            const inputNama = document.getElementById('player-name').value.trim();
+            namaPemain = inputNama !== "" ? inputNama : "Saintis Hebat";
+
+            document.getElementById('display-name').textContent = namaPemain;
+            document.getElementById('cert-name').textContent = namaPemain;
+
+            document.getElementById('teacher-avatar').textContent = cikguYong.emoji;
+            document.getElementById('teacher-label').textContent = cikguYong.nama;
+            document.getElementById('teacher-bubble').innerHTML = cikguYong.intro;
+            document.getElementById('cert-signature').textContent = cikguYong.nama;
+
+            senaraiMainHaiwan = [...databaseHaiwan].sort(() => Math.random() - 0.5);
+            indexSemasa = 0;
+            markahBetul = 0;
+
+            document.getElementById('total-val').textContent = senaraiMainHaiwan.length;
+            document.getElementById('score-val').textContent = "0";
+
+            document.getElementById('screen-welcome').classList.add('hidden');
+            document.getElementById('screen-certificate').classList.add('hidden');
+            document.getElementById('screen-game').classList.remove('hidden');
+
+            kemaskiniKadHaiwan();
+            kosongkanKawasanPengelasan();
+        }
+
+        function kosongkanKawasanPengelasan() {
+            const listPlants = document.getElementById('list-plants');
+            const listMeat = document.getElementById('list-meat');
+            const listBoth = document.getElementById('list-both');
+
+            listPlants.innerHTML = '<span class="text-[9px] text-emerald-400/70 italic py-1">Letak ke sini</span>';
+            listMeat.innerHTML = '<span class="text-[9px] text-orange-400/70 italic py-1">Letak ke sini</span>';
+            listBoth.innerHTML = '<span class="text-[9px] text-indigo-400/70 italic py-1">Letak ke sini</span>';
+        }
+
+        function kemaskiniKadHaiwan() {
+            // Sembunyikan kad fakta AI sebelumnya
+            document.getElementById('ai-fact-container').classList.add('hidden');
+
+            if (indexSemasa >= senaraiMainHaiwan.length) {
+                tamatPermainan();
+                return;
+            }
+
+            const haiwan = senaraiMainHaiwan[indexSemasa];
+            
+            document.getElementById('animal-emoji').textContent = haiwan.emoji;
+            document.getElementById('animal-name').textContent = haiwan.name;
+            document.getElementById('hint-bubble').classList.add('hidden');
+
+            const formatSoalan = cikguYong.soalan.replace('[ANIMAL]', haiwan.name);
+            document.getElementById('teacher-bubble').innerHTML = formatSoalan;
+
+            const peratus = (indexSemasa / senaraiMainHaiwan.length) * 100;
+            document.getElementById('progress-bar').style.width = `${peratus}%`;
+            document.getElementById('progress-text').textContent = `${indexSemasa} / ${senaraiMainHaiwan.length}`;
+        }
+
+        function bukaPetunjuk() {
+            playClickSound();
+            const petunjukBub = document.getElementById('hint-bubble');
+            const haiwanSemasa = senaraiMainHaiwan[indexSemasa];
+            
+            petunjukBub.textContent = `💡 Petunjuk Cikgu: "${haiwanSemasa.hint}"`;
+            petunjukBub.classList.toggle('hidden');
+        }
+
+        /* ================= SISTEM DRAG & DROP DESKTOP ================= */
+        function setUpDragAndDrop() {
+            const kad = document.getElementById('active-animal-card');
+            const dropZones = document.querySelectorAll('.drop-zone');
+
+            kad.addEventListener('dragstart', function(e) {
+                e.dataTransfer.setData('text/plain', senaraiMainHaiwan[indexSemasa].diet);
+                kad.classList.add('opacity-50');
+            });
+
+            kad.addEventListener('dragend', function() {
+                kad.classList.remove('opacity-50');
+            });
+
+            dropZones.forEach(zone => {
+                zone.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    zone.classList.add('dragover');
+                });
+
+                zone.addEventListener('dragleave', function() {
+                    zone.classList.remove('dragover');
+                });
+
+                zone.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    zone.classList.remove('dragover');
+                    const targetDiet = zone.getAttribute('data-diet');
+                    prosesJawapan(targetDiet);
+                });
+            });
+        }
+
+        function pilihKategoriButang(dietPilihan) {
+            playClickSound();
+            prosesJawapan(dietPilihan);
+        }
+
+        function prosesJawapan(dietPilihan) {
+            const haiwanSemasa = senaraiMainHaiwan[indexSemasa];
+            const kadLatar = document.getElementById('screen-game');
+            const cheerContainer = document.getElementById('cheer-container');
+
+            if (dietPilihan === haiwanSemasa.diet) {
+                markahBetul++;
+                playCorrectSound();
+                
+                confetti({
+                    particleCount: 30,
+                    spread: 60,
+                    origin: { y: 0.75 }
+                });
+
+                kadLatar.classList.add('success-flash');
+                setTimeout(() => kadLatar.classList.remove('success-flash'), 400);
+
+                let namaZon = '';
+                if (dietPilihan === 'plants') namaZon = 'list-plants';
+                else if (dietPilihan === 'meat') namaZon = 'list-meat';
+                else if (dietPilihan === 'both') namaZon = 'list-both';
+
+                const targetList = document.getElementById(namaZon);
+                if (targetList.innerHTML.includes('Letak ke sini')) {
+                    targetList.innerHTML = '';
+                }
+                
+                targetList.innerHTML += `
+                    <span class="inline-flex items-center gap-1 bg-white border border-slate-200 px-2 py-0.5 rounded-full text-[10px] font-bold shadow-sm animate-bounce">
+                        ${haiwanSemasa.emoji} ${haiwanSemasa.name}
+                    </span>
+                `;
+
+                const listPujian = cikguYong.betul;
+                const rawPujian = listPujian[Math.floor(Math.random() * listPujian.length)];
+                const hasilPujian = rawPujian
+                    .replace('[NAME]', namaPemain)
+                    .replace('[ANIMAL]', haiwanSemasa.name);
+
+                document.getElementById('teacher-bubble').innerHTML = hasilPujian;
+
+                const perkataanGalakan = galakanBetul[Math.floor(Math.random() * galakanBetul.length)];
+                cheerContainer.innerHTML = `⭐ ${perkataanGalakan}!`;
+                cheerContainer.classList.remove('hidden');
+                setTimeout(() => cheerContainer.classList.add('hidden'), 1200);
+
+                document.getElementById('score-val').textContent = markahBetul;
+
+                indexSemasa++;
+                setTimeout(kemaskiniKadHaiwan, 1500);
+
+            } else {
+                playWrongSound();
+
+                const kadAktif = document.getElementById('active-animal-card');
+                kadAktif.classList.add('shaking');
+                setTimeout(() => kadAktif.classList.remove('shaking'), 500);
+
+                const listNasihat = cikguYong.salah;
+                const rawNasihat = listNasihat[Math.floor(Math.random() * listNasihat.length)];
+                const hasilNasihat = rawNasihat.replace('[ANIMAL]', haiwanSemasa.name);
+
+                document.getElementById('teacher-bubble').innerHTML = hasilNasihat;
+            }
+        }
+
+        function tamatPermainan() {
+            const peratusSkor = Math.round((markahBetul / databaseHaiwan.length) * 100);
+            document.getElementById('cert-score').textContent = `${peratusSkor}%`;
+
+            const hariIni = new Date();
+            const formatTarikh = `${String(hariIni.getDate()).padStart(2, '0')}/${String(hariIni.getMonth() + 1).padStart(2, '0')}/${hariIni.getFullYear()}`;
+            document.getElementById('cert-date').textContent = formatTarikh;
+
+            document.getElementById('screen-game').classList.add('hidden');
+            document.getElementById('screen-certificate').classList.remove('hidden');
+
+            const end = Date.now() + 2000;
+            (function frame() {
+                confetti({ particleCount: 4, angle: 60, spread: 55, origin: { x: 0 } });
+                confetti({ particleCount: 4, angle: 120, spread: 55, origin: { x: 1 } });
+                if (Date.now() < end) {
+                    requestAnimationFrame(frame);
+                }
+            }());
+        }
+
+        function kongsiSijil() {
+            playClickSound();
+            const rawText = `Saya, ${namaPemain} telah berjaya menamatkan Rimba Klasifikasi Haiwan bersama Cikgu Yong!`;
+            
+            const el = document.createElement('textarea');
+            el.value = rawText;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-slate-900/95 text-white px-5 py-3 rounded-xl text-xs font-semibold shadow-xl z-50 flex items-center gap-2 border border-amber-400 animate-bounce';
+            toast.innerHTML = '✨ <span class="text-amber-400">Pemberitahuan:</span> Ucapan kejayaan telah disalin!';
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+                setTimeout(() => toast.remove(), 500);
+            }, 3000);
+        }
+
+        function resetMulaPermainan() {
+            playClickSound();
+            document.getElementById('player-name').value = '';
+            document.getElementById('screen-certificate').classList.add('hidden');
+            document.getElementById('screen-game').classList.add('hidden');
+            document.getElementById('screen-welcome').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
